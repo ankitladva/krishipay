@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Tractor, Milk, Wrench, Home, LogOut, FileText, ArrowLeft } from 'lucide-react';
 import MicButton from '@/components/MicButton';
 import SchemeCard from '@/components/SchemeCard';
+import RiskScoreCard from '@/components/RiskScoreCard';
+import LoanPreFilter from '@/components/LoanPreFilter';
 import { useVoice } from '@/components/VoiceProvider';
 import { useAuthStore } from '@/store/authStore';
 import { useLoanStore } from '@/store/loanStore';
@@ -22,6 +24,8 @@ export default function DashboardPage() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const { matchedScheme, matchSchemeByIntent, setMatchedScheme, resetApplication } = useLoanStore();
   const [hasGreeted, setHasGreeted] = useState(false);
+  const [showRiskScore, setShowRiskScore] = useState(true);
+  const [showLoanFilter, setShowLoanFilter] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -114,6 +118,56 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Risk Score Card */}
+        {showRiskScore && (
+          <section className="mb-12 animate-scale-in">
+            <RiskScoreCard userId={user?.phoneNumber} />
+          </section>
+        )}
+
+        {/* Loan Pre-Filter */}
+        {showLoanFilter && (
+          <section className="mb-12 animate-scale-in">
+            <LoanPreFilter
+              farmerProfile={user}
+              onSelectLoan={(loanId) => {
+                speak('आवेदन प्रक्रिया शुरू हो रही है।');
+                // Handle loan selection
+              }}
+            />
+          </section>
+        )}
+
+        {/* Toggle Buttons */}
+        <div className="mb-8 flex gap-4 justify-center">
+          <button
+            onClick={() => {
+              setShowRiskScore(!showRiskScore);
+              setShowLoanFilter(false);
+            }}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+              showRiskScore
+                ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
+                : 'bg-white border-2 border-neutral-200 text-neutral-700 hover:border-purple-300'
+            }`}
+          >
+            {showRiskScore ? '✓' : ''} Risk Score
+          </button>
+          <button
+            onClick={() => {
+              setShowLoanFilter(!showLoanFilter);
+              setShowRiskScore(false);
+            }}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+              showLoanFilter
+                ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg'
+                : 'bg-white border-2 border-neutral-200 text-neutral-700 hover:border-teal-300'
+            }`}
+          >
+            {showLoanFilter ? '✓' : ''} Loan Recommendations
+          </button>
+        </div>
+
         {/* Voice Input Section - The Command Center */}
         <section className="mb-12">
           <div className="bg-gradient-to-br from-green-600 via-teal-600 to-green-700 rounded-3xl shadow-2xl p-8 md:p-16 text-center relative overflow-hidden">

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import User from '@/lib/models/User';
 import { getSession } from '@/lib/session';
-import { simulateVoiceBiometric } from '@/lib/voice';
+import { generateBhashiniVoiceprint } from '@/lib/voice';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,19 +24,19 @@ export async function POST(request: NextRequest) {
     let isNewUser = false;
 
     if (!user) {
-      // Create new user
-      const voicePrintId = voicePrint || simulateVoiceBiometric('new user');
+      // Create new user with Bhashini voiceprint
+      const bhashiniVoicePrintId = voicePrint || generateBhashiniVoiceprint('new user');
       
       user = await User.create({
         phoneNumber,
-        voicePrintId,
+        voicePrintId: bhashiniVoicePrintId,
         kycVerified: false,
         language: 'hi',
       });
       
       isNewUser = true;
     } else {
-      // Update voice print if provided
+      // Update Bhashini voiceprint if provided
       if (voicePrint) {
         user.voicePrintId = voicePrint;
         await user.save();

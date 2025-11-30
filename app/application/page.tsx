@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { FileText, MapPin, Mic, CheckCircle, ArrowRight, ArrowLeft, Image as ImageIcon, Home } from 'lucide-react';
 import DocumentUploadCard from '@/components/DocumentUploadCard';
 import MapViewer from '@/components/MapViewer';
+import LivestockVerification from '@/components/LivestockVerification';
 import { useVoice } from '@/components/VoiceProvider';
 import { useAuthStore } from '@/store/authStore';
 import { useLoanStore } from '@/store/loanStore';
-import { simulateGeoValuation } from '@/lib/ocr-mock';
+import { invokeBhashiniGeoValuation } from '@/lib/ocr-mock';
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 interface UploadedDoc {
   type: string;
@@ -28,6 +29,7 @@ export default function ApplicationPage() {
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
   const [extractedData, setExtractedData] = useState<any>({});
   const [geoValuation, setGeoValuation] = useState<any>(null);
+  const [assetData, setAssetData] = useState<any>(null);
   const [voiceConsent, setVoiceConsent] = useState(false);
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export default function ApplicationPage() {
   }, [isAuthenticated, matchedScheme, router]);
 
   useEffect(() => {
-    if (currentStep === 3 && !voiceConsent) {
+    if (currentStep === 4 && !voiceConsent) {
       setTimeout(() => {
         speak('सारांश: आप ' + matchedScheme?.title + ' के लिए आवेदन कर रहे हैं। क्या आप सहमत हैं?');
       }, 500);
@@ -51,7 +53,7 @@ export default function ApplicationPage() {
   }, [currentStep, voiceConsent, matchedScheme, speak]);
 
   useEffect(() => {
-    if (transcript && currentStep === 3) {
+    if (transcript && currentStep === 4) {
       handleVoiceConsent(transcript);
     }
   }, [transcript, currentStep]);
@@ -98,8 +100,8 @@ export default function ApplicationPage() {
       return;
     }
 
-    // Simulate geo-spatial valuation
-    const valuation = await simulateGeoValuation(
+    // Invoke Bhashini Geo-Spatial API for land valuation
+    const valuation = await invokeBhashiniGeoValuation(
       19.0760,
       72.8777,
       extractedData.landArea || 2.5
@@ -125,6 +127,17 @@ export default function ApplicationPage() {
         geoValuation: geoValuation.valuation,
       });
       setCurrentStep(3);
+      speak('भूमि सत्यापित। अब पशुधन और उपकरण सत्यापन।');
+    }
+  };
+
+  const handleStep3Next = () => {
+    if (assetData) {
+      updateApplication({
+        assetVerification: assetData,
+      });
+      setCurrentStep(4);
+      speak('संपत्ति सत्यापित। अब आवाज़ सहमति।');
     }
   };
 
@@ -199,13 +212,13 @@ export default function ApplicationPage() {
         <div className="h-3 bg-neutral-200">
           <div 
             className="h-full bg-gradient-to-r from-green-500 to-teal-600 transition-all duration-500 ease-out shadow-lg shadow-green-500/50"
-            style={{ width: `${(currentStep / 3) * 100}%` }}
+            style={{ width: `${(currentStep / 4) * 100}%` }}
           ></div>
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            {[1, 2, 3].map((step) => (
+            {[1, 2, 3, 4].map((step) => (
               <div key={step} className="flex items-center flex-1">
                 <div
                   className={`
@@ -227,11 +240,12 @@ export default function ApplicationPage() {
                     }`}
                   >
                     {step === 1 && 'दस्तावेज़'}
-                    {step === 2 && 'सत्यापन'}
-                    {step === 3 && 'सहमति'}
+                    {step === 2 && 'भूमि'}
+                    {step === 3 && 'संपत्ति'}
+                    {step === 4 && 'सहमति'}
                   </p>
                 </div>
-                {step < 3 && (
+                {step < 4 && (
                   <div
                     className={`h-2 flex-1 rounded-full transition-all duration-300 ${
                       currentStep > step ? 'bg-gradient-to-r from-green-500 to-teal-600' : 'bg-neutral-200'
@@ -389,8 +403,44 @@ export default function ApplicationPage() {
           </div>
         )}
 
-        {/* Step 3: Voice Consent */}
+        {/* Step 3: Livestock & Equipment Verification */}
         {currentStep === 3 && (
+          <div className="space-y-8">
+            <div className="text-center mb-8">
+              <h2 className="text-4xl font-bold text-neutral-900 mb-2">
+                संपत्ति सत्यापन
+              </h2>
+              <p className="text-xl text-neutral-600">
+                Asset Verification
+              </p>
+            </div>
+
+            <LivestockVerification
+              onVerified={(data) => setAssetData(data)}
+            />
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCurrentStep(2)}
+                className="flex-1 touch-target-xl bg-gradient-to-r from-neutral-400 to-neutral-500 text-white text-2xl font-bold rounded-2xl hover:from-neutral-500 hover:to-neutral-600 transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:scale-105"
+              >
+                <ArrowLeft size={32} />
+                <span>पीछे</span>
+              </button>
+              <button
+                onClick={handleStep3Next}
+                disabled={!assetData}
+                className="flex-1 touch-target-xl bg-gradient-to-r from-green-500 to-teal-600 text-white text-2xl font-bold rounded-2xl hover:from-green-600 hover:to-teal-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 shadow-lg shadow-green-500/50 hover:shadow-xl hover:shadow-green-500/60 hover:scale-105"
+              >
+                <span>आगे बढ़ें</span>
+                <ArrowRight size={32} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Voice Consent */}
+        {currentStep === 4 && (
           <div className="space-y-8">
             <div className="text-center mb-8">
               <h2 className="text-4xl font-bold text-neutral-900 mb-2">

@@ -1,4 +1,4 @@
-# सरल ऋण (Saral Loan) - Voice-First Unified Lending Interface
+# KisanSetu - Voice-First Unified Lending Interface
 
 A responsive web application designed for rural farmers in India to apply for loans using voice commands, backed by MongoDB.
 

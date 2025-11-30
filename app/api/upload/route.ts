@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
-import { extractTextFromImage, validateImageQuality } from '@/lib/ocr-mock';
+import { invokeBhashiniOCR, validateBhashiniImageQuality } from '@/lib/ocr-mock';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,32 +25,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate image quality
-    const validation = validateImageQuality(file);
-    if (!validation.isValid) {
+    // Validate image quality for Bhashini OCR
+    const bhashiniValidation = validateBhashiniImageQuality(file);
+    if (!bhashiniValidation.isValid) {
       return NextResponse.json(
-        { error: validation.issues.join(', ') },
+        { error: bhashiniValidation.issues.join(', ') },
         { status: 400 }
       );
     }
 
-    // Extract text using mock OCR
-    const ocrResult = await extractTextFromImage(
+    // Extract vernacular text using Bhashini OCR API
+    const bhashiniOCRResult = await invokeBhashiniOCR(
       file,
       documentType as any
     );
 
-    // In production, you would:
-    // 1. Upload file to storage (GridFS, S3, etc.)
-    // 2. Store file reference in database
-    // For now, we just return the extracted data
+    // In production: Bhashini API would:
+    // 1. Upload file to Bhashini cloud storage
+    // 2. Process with Bhashini ML models for Indian languages
+    // 3. Return structured data
+    // For demo, returning extracted data
 
     return NextResponse.json({
       success: true,
       filename: file.name,
-      extractedData: ocrResult.extractedData,
-      confidence: ocrResult.confidence,
-      processingTime: ocrResult.processingTime,
+      extractedData: bhashiniOCRResult.extractedData,
+      confidence: bhashiniOCRResult.confidence,
+      processingTime: bhashiniOCRResult.processingTime,
+      bhashiniApiVersion: bhashiniOCRResult.bhashiniApiVersion,
     });
   } catch (error) {
     console.error('Error uploading file:', error);

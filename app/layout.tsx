@@ -3,7 +3,7 @@ import "./globals.css";
 import { ClientLayout } from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
-  title: "सरल ऋण | Farmer Loan Portal",
+  title: "KisanSetu | Farmer Loan Portal",
   description: "Voice-first lending platform for rural farmers in India",
 };
 

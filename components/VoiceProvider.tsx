@@ -2,13 +2,13 @@
 
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import {
-  startSpeechRecognition,
-  stopSpeechRecognition,
-  speak as speakText,
-  stopSpeaking,
-  isSpeechRecognitionAvailable,
-  isSpeechSynthesisAvailable,
-  SpeechRecognitionResult,
+  initBhashiniSTT,
+  stopBhashiniSTT,
+  invokeBhashiniTTS,
+  stopBhashiniTTS,
+  isBhashiniSTTAvailable,
+  isBhashiniTTSAvailable,
+  BhashiniVoiceResult,
 } from '@/lib/voice';
 
 interface VoiceContextType {
@@ -46,21 +46,21 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
     checkMicrophonePermission();
     
-    // Preload voices for better TTS performance
-    if (typeof window !== 'undefined' && isSpeechSynthesisAvailable()) {
-      // Trigger voice loading
-      const loadVoices = () => {
+    // Preload Bhashini TTS voices for better performance
+    if (typeof window !== 'undefined' && isBhashiniTTSAvailable()) {
+      // Trigger Bhashini voice loading
+      const loadBhashiniVoices = () => {
         const voices = window.speechSynthesis.getVoices();
         if (voices.length > 0) {
-          console.log(`✅ Loaded ${voices.length} voices for TTS`);
+          console.log(`✅ Bhashini: Loaded ${voices.length} voices for Indian languages`);
         }
       };
       
-      // Load voices immediately if available
-      loadVoices();
+      // Load Bhashini voices immediately if available
+      loadBhashiniVoices();
       
-      // Also listen for voiceschanged event
-      window.speechSynthesis.onvoiceschanged = loadVoices;
+      // Listen for Bhashini voices loaded event
+      window.speechSynthesis.onvoiceschanged = loadBhashiniVoices;
       
       // Cleanup
       return () => {
@@ -69,10 +69,11 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Check if Bhashini API is supported
   const isSupported = mounted && 
     typeof window !== 'undefined' && 
-    isSpeechRecognitionAvailable() && 
-    isSpeechSynthesisAvailable();
+    isBhashiniSTTAvailable() && 
+    isBhashiniTTSAvailable();
 
   const checkMicrophonePermission = async () => {
     if (typeof window === 'undefined' || !navigator.permissions) {
@@ -94,7 +95,7 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
 
   const startListening = useCallback((onResult?: (transcript: string) => void) => {
     if (!isSupported) {
-      setError('Voice recognition not supported in this browser. Please use Chrome or Edge.');
+      setError('Bhashini API not supported in this browser. Please use Chrome or Edge.');
       return;
     }
 
@@ -102,14 +103,14 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Clear previous errors
+    // Clear previous Bhashini errors
     setError(null);
     resultCallbackRef.current = onResult || null;
     setTranscript('');
     setInterimTranscript('');
     setIsListening(true);
 
-    const handleResult = (result: SpeechRecognitionResult) => {
+    const handleBhashiniResult = (result: BhashiniVoiceResult) => {
       if (result.isFinal) {
         setTranscript(result.transcript);
         setInterimTranscript('');
@@ -119,51 +120,51 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    const handleError = (errorType: string) => {
+    const handleBhashiniError = (errorType: string) => {
       setIsListening(false);
       
-      // Handle different error types
+      // Handle Bhashini API error types
       switch (errorType) {
         case 'not-allowed':
         case 'permission-denied':
-          console.error('Speech recognition error: Microphone permission denied');
-          setError('🎤 Microphone access denied. Please allow microphone permissions in your browser settings.');
+          console.error('Bhashini STT error: Microphone permission denied');
+          setError('🎤 Microphone access denied. Please allow microphone permissions for Bhashini API.');
           break;
         case 'no-speech':
-          // "no-speech" is a normal condition - user didn't speak or timed out
-          // Don't show error, just silently stop listening
-          console.log('Speech recognition: No speech detected (this is normal)');
+          // "no-speech" is normal Bhashini behavior
+          console.log('Bhashini STT: No speech detected (normal behavior)');
           setError(null); // Clear any previous errors
           break;
         case 'audio-capture':
-          console.error('Speech recognition error: No microphone found');
-          setError('No microphone found. Please check your device.');
+          console.error('Bhashini STT error: No microphone found');
+          setError('No microphone found for Bhashini API. Please check your device.');
           break;
         case 'network':
-          console.error('Speech recognition error: Network error');
-          setError('Network error. Please check your internet connection.');
+          console.error('Bhashini API error: Network error');
+          setError('Bhashini API network error. Please check your internet connection.');
           break;
         case 'aborted':
-          // User manually stopped - this is normal
-          console.log('Speech recognition: Aborted by user');
+          // User manually stopped Bhashini session
+          console.log('Bhashini STT: Session aborted by user');
           setError(null);
           break;
         default:
-          // Only log and show error for unexpected errors
-          console.warn('Speech recognition warning:', errorType);
-          // Don't set error for minor issues
+          // Log unexpected Bhashini errors
+          console.warn('Bhashini API warning:', errorType);
           if (errorType !== 'no-speech' && errorType !== 'aborted') {
-            setError('Voice recognition failed. Please try again.');
+            setError('Bhashini voice recognition failed. Please try again.');
           }
       }
     };
 
-    recognitionRef.current = startSpeechRecognition(language, handleResult, handleError);
+    // Initialize Bhashini STT session
+    recognitionRef.current = initBhashiniSTT(language, handleBhashiniResult, handleBhashiniError);
   }, [isSupported, isListening, language]);
 
   const stopListeningHandler = useCallback(() => {
     if (recognitionRef.current) {
-      stopSpeechRecognition(recognitionRef.current);
+      // Stop Bhashini STT session
+      stopBhashiniSTT(recognitionRef.current);
       recognitionRef.current = null;
     }
     setIsListening(false);
@@ -172,12 +173,13 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
 
   const speak = useCallback((text: string, onEnd?: () => void) => {
     if (!isSupported) {
-      console.warn('Speech synthesis not supported');
+      console.warn('Bhashini TTS not supported');
       onEnd?.();
       return;
     }
 
-    speakText(text, language, onEnd);
+    // Invoke Bhashini TTS for vernacular output
+    invokeBhashiniTTS(text, language, onEnd);
   }, [isSupported, language]);
 
   const clearTranscript = useCallback(() => {
@@ -200,7 +202,7 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     startListening,
     stopListening: stopListeningHandler,
     speak,
-    stopSpeaking,
+    stopSpeaking: stopBhashiniTTS,
     setLanguage,
     clearTranscript,
     clearError,

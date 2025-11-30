@@ -66,7 +66,7 @@ export default function HomePage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-primary-700">
-                  सरल ऋण
+                  KisanSetu
                 </h1>
                 <p className="text-xs text-neutral-700 font-medium">Smart Farming Loans</p>
               </div>
@@ -280,9 +280,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Sprout className="w-6 h-6" />
-            <span className="text-xl font-bold">सरल ऋण</span>
+            <span className="text-xl font-bold">KisanSetu</span>
           </div>
-          <p className="text-neutral-400">© 2025 Saral Loan. All rights reserved.</p>
+          <p className="text-neutral-400">© 2025 KisanSetu. All rights reserved.</p>
         </div>
       </footer>
     </div>

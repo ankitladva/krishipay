@@ -1,4 +1,4 @@
-# 🚀 Quick Start Guide - सरल ऋण
+# 🚀 Quick Start Guide - KisanSetu
 
 ## Start the Application (5 Minutes)
 
