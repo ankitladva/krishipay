@@ -4,6 +4,7 @@ export interface IUser extends Document {
   phoneNumber: string;
   kycVerified: boolean;
   voicePrintId: string;
+  faceId: string;
   language: string;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +27,10 @@ const UserSchema = new Schema<IUser>(
       type: String,
       default: '',
     },
+    faceId: {
+      type: String,
+      default: '',
+    },
     language: {
       type: String,
       default: 'hi',
@@ -44,4 +49,3 @@ UserSchema.index({ phoneNumber: 1 });
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 
 export default User;
-

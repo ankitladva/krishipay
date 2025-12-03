@@ -106,9 +106,43 @@ This application provides a **voice-first, accessibility-focused** lending platf
    
    # Session secret (for iron-session)
    SESSION_SECRET=complex_password_at_least_32_characters_long_for_security_change_in_production
+
+   # IDfy OTP credentials
+   IDFY_ACCOUNT_ID=62361a9e5da8/b572eda9-c1af-4a6d-bdbe-ed38cfe8fc01
+   IDFY_API_KEY=f02a4091-0dfa-4b51-92da-33a1f47af43d
+
+   # Voice verification
+   VOICE_MATCH_THRESHOLD=0.6
+   # Face verification (0-1 or 0-100 score)
+   FACE_MATCH_THRESHOLD=0.8
+   # Optional: path to python interpreter with resemblyzer installed
+   VOICE_PYTHON_PATH=/Users/you/miniconda3/envs/voice/bin/python
    ```
    
    **Note:** The app will use MongoDB Atlas if `MONGODB_URI` is set, otherwise it falls back to in-memory MongoDB for development.
+
+### 🔐 Voice Verification Pipeline
+
+- After OTP success, the browser records ~4 seconds of the user clearly stating their name. The recording is converted to a mono WAV file, Base64-encoded on the client, and stored as `voicePrintId` for enrollment.
+- Returning users submit a fresh recording, which is compared against the stored sample inside `app/api/auth/login/route.ts`. The handler spawns `scripts/voice_verify.py`, which embeds each sample with [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) and checks cosine similarity with the configured `VOICE_MATCH_THRESHOLD`.
+- The Python helper keeps all processing on your machine—no external APIs are used—so credentials remain private.
+
+Install the required Python stack once (Python 3.9+):
+
+```bash
+cd krishipay
+python -m venv .venv && source .venv/bin/activate  # optional but recommended
+pip install numpy resemblyzer soundfile librosa torch
+```
+
+Ensure `python3` is available on your PATH so the Next.js API route can spawn the script successfully.
+If you already have a Conda/virtualenv interpreter with the dependencies installed, set `VOICE_PYTHON_PATH` to that interpreter so the backend uses it.
+
+### 🧠 Face Verification Pipeline
+
+- Once the voice sample is ready, users capture a selfie directly in the browser (mobile devices use the `capture="user"` hint). The image is stored as Base64 (`faceId`) for new users.
+- Returning users submit a fresh selfie; the `/api/auth/login` route sends both images to the IDfy `compare/face` endpoint and checks the similarity score against `FACE_MATCH_THRESHOLD` (treat the value as either 0–1 or 0–100).
+- On a successful match, the latest selfie replaces the stored copy so we always keep a recent photo tied to the phone number.
 
 4. **Run the development server**
    ```bash
@@ -132,7 +166,8 @@ This application provides a **voice-first, accessibility-focused** lending platf
 
 2. **Authentication** (`/login`)
    - Enter 10-digit mobile number
-   - Voice biometric: Read the Hindi phrase
+   - OTP verification + voice biometric: record your name for matching
+   - Capture selfie for face verification (stored for new users, matched for returning users)
    - Auto-registration for new users
 
 3. **Dashboard** (`/dashboard`)
