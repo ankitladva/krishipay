@@ -10,7 +10,7 @@ interface LoanState {
   isLoading: boolean;
   error: string | null;
   
-  // Actions
+  // Actions 
   setMatchedScheme: (scheme: IScheme | null) => void;
   updateApplication: (data: Partial<ILoanApplication>) => void;
   resetApplication: () => void;

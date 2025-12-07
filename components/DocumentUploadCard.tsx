@@ -107,7 +107,7 @@ export default function DocumentUploadCard({
       />
 
       <div className="flex flex-col items-center text-center space-y-4">
-        {/* Icon with Enhanced Effects */}
+        {/* Icon with Enhanced  Effects */}
         <div
           className={`
             p-8 rounded-2xl shadow-lg transition-all duration-300

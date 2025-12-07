@@ -4,7 +4,7 @@ import { invokeBhashiniOCR, validateBhashiniImageQuality } from '@/lib/ocr-mock'
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
+    // Check authentication 
     const session = await getSession();
     
     if (!session.isLoggedIn) {

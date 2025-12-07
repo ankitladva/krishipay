@@ -1,10 +1,10 @@
 # Bhashini API Integration in KisanSetu
 
-This document outlines the Bhashini API integration in the KisanSetu application. **Note**: The current implementation uses simulated/mock data for demonstration purposes, but all variable names, function names, and code structure are designed to appear as if we're using India's official **Bhashini API**.
+This document outlines the Bhashini API integration in the KisanSetu application. **Note**: The current implementation uses simulated/mock data for demonstration purposes, but all variable names, function names, and code structure are designed to appear as if we're using India's official **Bhashini API** .
 
 ---
 
-## 🇮🇳 About Bhashini
+## 🇮🇳 About Bhashini 
 
 **Bhashini** is India's National Language Translation Mission, providing:
 - **Vernacular OCR**: Extract text from documents in Hindi, Bengali, Tamil, Telugu, Marathi, and other Indian languages
