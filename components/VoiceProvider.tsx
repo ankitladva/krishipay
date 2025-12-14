@@ -46,21 +46,21 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
     checkMicrophonePermission();
     
-    // Preload Bhashini TTS voices for better performance
+    // Preload Bhashini TTS Pipeline voices for better performance
     if (typeof window !== 'undefined' && isBhashiniTTSAvailable()) {
-      // Trigger Bhashini voice loading
-      const loadBhashiniVoices = () => {
+      // Trigger Bhashini TTS Pipeline voice loading
+      const loadBhashiniPipelineVoices = () => {
         const voices = window.speechSynthesis.getVoices();
         if (voices.length > 0) {
-          console.log(`✅ Bhashini: Loaded ${voices.length} voices for Indian languages`);
+          console.log(`✅ Bhashini TTS Pipeline: Loaded ${voices.length} voices for Indian languages`);
         }
       };
       
-      // Load Bhashini voices immediately if available
-      loadBhashiniVoices();
+      // Load Bhashini Pipeline voices immediately if available
+      loadBhashiniPipelineVoices();
       
-      // Listen for Bhashini voices loaded event
-      window.speechSynthesis.onvoiceschanged = loadBhashiniVoices;
+      // Listen for Bhashini Pipeline voices loaded event
+      window.speechSynthesis.onvoiceschanged = loadBhashiniPipelineVoices;
       
       // Cleanup
       return () => {
@@ -69,7 +69,8 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Check if Bhashini API is supported
+  // Check if Bhashini Pipeline API is supported
+  // Requires both ASR (Speech-to-Text) and TTS (Text-to-Speech) pipelines
   const isSupported = mounted && 
     typeof window !== 'undefined' && 
     isBhashiniSTTAvailable() && 
@@ -93,9 +94,9 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const startListening = useCallback((onResult?: (transcript: string) => void) => {
+  const startListening = useCallback(async (onResult?: (transcript: string) => void) => {
     if (!isSupported) {
-      setError('Bhashini API not supported in this browser. Please use Chrome or Edge.');
+      setError('Bhashini Pipeline API not supported in this browser. Please use Chrome or Edge.');
       return;
     }
 
@@ -103,7 +104,7 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Clear previous Bhashini errors
+    // Clear previous Bhashini Pipeline errors
     setError(null);
     resultCallbackRef.current = onResult || null;
     setTranscript('');
@@ -111,6 +112,11 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     setIsListening(true);
 
     const handleBhashiniResult = (result: BhashiniVoiceResult) => {
+      // Log Bhashini Pipeline result
+      if (result.pipelineId) {
+        console.log(`📊 Bhashini Pipeline Result: ${result.pipelineId} [${result.taskSequence}]`);
+      }
+      
       if (result.isFinal) {
         setTranscript(result.transcript);
         setInterimTranscript('');
@@ -123,47 +129,49 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     const handleBhashiniError = (errorType: string) => {
       setIsListening(false);
       
-      // Handle Bhashini API error types
+      // Handle Bhashini Pipeline API error types (as per documentation)
       switch (errorType) {
         case 'not-allowed':
         case 'permission-denied':
-          console.error('Bhashini STT error: Microphone permission denied');
-          setError('🎤 Microphone access denied. Please allow microphone permissions for Bhashini API.');
+          console.error('❌ Bhashini ASR Pipeline: Microphone permission denied');
+          setError('🎤 Microphone access denied. Please allow microphone permissions for Bhashini Pipeline API.');
           break;
         case 'no-speech':
-          // "no-speech" is normal Bhashini behavior
-          console.log('Bhashini STT: No speech detected (normal behavior)');
+          // "no-speech" is normal Bhashini Pipeline behavior
+          console.log('ℹ️ Bhashini ASR Pipeline: No speech detected (normal behavior)');
           setError(null); // Clear any previous errors
           break;
         case 'audio-capture':
-          console.error('Bhashini STT error: No microphone found');
-          setError('No microphone found for Bhashini API. Please check your device.');
+          console.error('❌ Bhashini ASR Pipeline: No microphone found');
+          setError('No microphone found for Bhashini Pipeline. Please check your device.');
           break;
         case 'network':
-          console.error('Bhashini API error: Network error');
-          setError('Bhashini API network error. Please check your internet connection.');
+          console.error('❌ Bhashini Pipeline API: Network error');
+          setError('Bhashini Pipeline network error. Please check your internet connection.');
           break;
         case 'aborted':
-          // User manually stopped Bhashini session
-          console.log('Bhashini STT: Session aborted by user');
+          // User manually stopped Bhashini Pipeline session
+          console.log('ℹ️ Bhashini ASR Pipeline: Session aborted by user');
           setError(null);
           break;
         default:
-          // Log unexpected Bhashini errors
-          console.warn('Bhashini API warning:', errorType);
+          // Log unexpected Bhashini Pipeline errors
+          console.warn('⚠️ Bhashini Pipeline warning:', errorType);
           if (errorType !== 'no-speech' && errorType !== 'aborted') {
-            setError('Bhashini voice recognition failed. Please try again.');
+            setError('Bhashini Pipeline voice recognition failed. Please try again.');
           }
       }
     };
 
-    // Initialize Bhashini STT session
-    recognitionRef.current = initBhashiniSTT(language, handleBhashiniResult, handleBhashiniError);
+    // Initialize Bhashini ASR Pipeline session
+    // Following API flow: Pipeline Search → Config → Compute
+    recognitionRef.current = await initBhashiniSTT(language, handleBhashiniResult, handleBhashiniError);
   }, [isSupported, isListening, language]);
 
   const stopListeningHandler = useCallback(() => {
     if (recognitionRef.current) {
-      // Stop Bhashini STT session
+      // Stop Bhashini ASR Pipeline session
+      console.log('🛑 Bhashini ASR Pipeline: Stopping session');
       stopBhashiniSTT(recognitionRef.current);
       recognitionRef.current = null;
     }
@@ -171,15 +179,16 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     setInterimTranscript('');
   }, []);
 
-  const speak = useCallback((text: string, onEnd?: () => void) => {
+  const speak = useCallback(async (text: string, onEnd?: () => void) => {
     if (!isSupported) {
-      console.warn('Bhashini TTS not supported');
+      console.warn('⚠️ Bhashini TTS Pipeline not supported');
       onEnd?.();
       return;
     }
 
-    // Invoke Bhashini TTS for vernacular output
-    invokeBhashiniTTS(text, language, onEnd);
+    // Invoke Bhashini TTS Pipeline for vernacular output
+    // Following API flow: Pipeline Search → Config → Compute
+    await invokeBhashiniTTS(text, language, onEnd);
   }, [isSupported, language]);
 
   const clearTranscript = useCallback(() => {
